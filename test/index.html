@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ごっそり耳くそ掃除ゲーム(ai生成)</title>
+    <title>ごっそり耳くそ掃除ゲーム - (ai生成です。testhtml)</title>
     <style>
         body {
             margin: 0;
@@ -22,12 +22,14 @@
             color: #5d534a;
             margin: 10px 0 5px 0;
             font-size: 24px;
+            z-index: 5;
         }
         #score-board {
             font-size: 18px;
             color: #7d6e61;
             margin-bottom: 10px;
             font-weight: bold;
+            z-index: 5;
         }
         #game-container {
             position: relative;
@@ -48,6 +50,16 @@
             background: radial-gradient(circle at 50% 80%, #663311 0%, #cc8855 70%, #ffd6b3 100%);
             opacity: 0.8;
             pointer-events: none;
+        }
+        /* エフェクトを描画する背景キャンバス */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* クリックや移動を邪魔しない */
+            z-index: 2;
         }
         /* 綿棒の見た目 */
         #swab {
@@ -80,24 +92,12 @@
             border-radius: 50%;
             box-shadow: inset -2px -2px 5px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
             transition: transform 0.1s linear;
+            z-index: 3;
         }
         /* カサブタのような大きめの耳くそ */
         .big-earwax {
             background-color: #5c3a21;
             border-radius: 40% 60% 50% 55%;
-        }
-        /* スッキリ演出のエフェクト */
-        .sparkle {
-            position: absolute;
-            color: #fff;
-            font-size: 20px;
-            pointer-events: none;
-            animation: fadeUp 0.5s ease-out forwards;
-            font-weight: bold;
-        }
-        @keyframes fadeUp {
-            0% { transform: translateY(0) scale(0.5); opacity: 1; }
-            100% { transform: translateY(-30px) scale(1.2); opacity: 0; }
         }
         /* ゲームオーバー／クリア画面 */
         #result-screen {
@@ -141,6 +141,7 @@
             color: #a69382;
             margin-top: 10px;
             text-align: center;
+            z-index: 5;
         }
     </style>
 </head>
@@ -151,6 +152,7 @@
 
     <div id="game-container">
         <div id="ear-hole"></div>
+        <canvas id="effectCanvas"></canvas>
         <div id="swab">
             <div class="swab-tip"></div>
             <div class="swab-stick"></div>
@@ -170,10 +172,84 @@
         const waxCountEl = document.getElementById('wax-count');
         const resultScreen = document.getElementById('result-screen');
         
+        // Canvasの設定
+        const canvas = document.getElementById('effectCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+
         const TOTAL_WAX = 20; // 耳くその総数
         let activeWaxCount = TOTAL_WAX;
+        let particles = [];
 
-        // マウス・タッチ移動に合わせて綿棒を動かす
+        // 粒子（パーティクル）クラス
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 3; // ゲーム用に少し速度調整
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.radius = Math.random() * 3 + 2;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.02; // 少し早めに消えるよう調整
+                // ゴールド〜オレンジ系の耳垢爽快カラー、またはレインボーから選択可能
+                // 今回はご提示いただいた「鮮やかなレインボーカラー」を採用
+                this.color = `hsl(${Math.random() * 360}, 100%, 65%)`;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.12; // 重力
+                this.vx *= 0.96; // 空気抵抗
+                this.vy *= 0.96;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // 弾けるエフェクト発生関数
+        function createBurst(x, y, count = 25) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        // アニメーションループ
+        function animate() {
+            // 前のフレームをクリア（ゲーム画面なので完全に透明クリアにする）
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // 綿棒の移動処理
         function moveSwab(e) {
             const rect = container.getBoundingClientRect();
             let clientX, clientY;
@@ -189,7 +265,6 @@
             const x = clientX - rect.left;
             const y = clientY - rect.top;
 
-            // コンテナ内に制限
             if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
                 swab.style.left = `${x}px`;
                 swab.style.top = `${y}px`;
@@ -199,13 +274,12 @@
 
         container.addEventListener('mousemove', moveSwab);
         container.addEventListener('touchmove', function(e) {
-            e.preventDefault(); // スクロール防止
+            e.preventDefault();
             moveSwab(e);
         }, { passive: false });
 
-        // 耳くそをランダムに生成する関数
+        // 耳くその生成
         function createEarwax() {
-            // 既存の耳くそを削除
             const existingWax = document.querySelectorAll('.earwax');
             existingWax.forEach(w => w.remove());
 
@@ -213,14 +287,13 @@
                 const wax = document.createElement('div');
                 wax.classList.add('earwax');
 
-                // 20%の確率で大きい耳くそにする
                 const isBig = Math.random() < 0.2;
-                let size = Math.floor(Math.random() * 15) + 15; // 15px ~ 30px
+                let size = Math.floor(Math.random() * 15) + 15;
                 
                 if (isBig) {
                     wax.classList.add('big-earwax');
-                    size = Math.floor(Math.random() * 15) + 35; // 35px ~ 50px
-                    wax.dataset.hp = 3; // 大きいのは3回こする
+                    size = Math.floor(Math.random() * 15) + 35;
+                    wax.dataset.hp = 3; 
                 } else {
                     wax.dataset.hp = 1;
                 }
@@ -228,9 +301,8 @@
                 wax.style.width = `${size}px`;
                 wax.style.height = `${size}px`;
 
-                // 耳の穴（中央〜下部）に集まりやすいようにランダム配置
                 const left = Math.random() * 320 + 40;
-                const top = Math.random() * 350 + 80;
+                const top = Math.random() * 300 + 100;
 
                 wax.style.left = `${left}px`;
                 wax.style.top = `${top}px`;
@@ -239,34 +311,37 @@
             }
         }
 
-        // 綿棒の先端と耳くその当たり判定
+        // 当たり判定
         function checkCollision(swabX, swabY) {
             const waxes = document.querySelectorAll('.earwax');
-            // 綿棒の先端（tip）のおおよその判定範囲
-            const tipRadius = 12;
+            const tipRadius = 12; // 綿棒の先端の判定半径
 
             waxes.forEach(wax => {
-                const waxX = parseFloat(wax.style.left) + parseFloat(wax.style.width) / 2;
-                const waxY = parseFloat(wax.style.top) + parseFloat(wax.style.height) / 2;
-                const waxRadius = parseFloat(wax.style.width) / 2;
+                // 耳くその中心座標と半径を算出
+                const waxWidth = parseFloat(wax.style.width);
+                const waxX = parseFloat(wax.style.left) + waxWidth / 2;
+                const waxY = parseFloat(wax.style.top) + waxWidth / 2;
+                const waxRadius = waxWidth / 2;
 
-                // 中心間の距離を計算
+                // 綿棒の中心と耳くその中心の距離を計算
                 const dist = Math.hypot(swabX - waxX, swabY - waxY);
 
-                // 接触している場合
+                // 接触している場合の処理
                 if (dist < tipRadius + waxRadius) {
                     let hp = parseInt(wax.dataset.hp);
                     
                     if (hp > 1) {
-                        // 大きい耳くそは削れる演出
+                        // 大きい耳くそが削れるとき（火花のような小爆発）
                         wax.dataset.hp = hp - 1;
                         wax.style.transform = `scale(${0.7 * hp})`;
-                        createSparkle(waxX, waxY, "✨");
-                        // 連続ヒットを防ぐために一瞬判定をずらす
-                        wax.style.left = `${parseFloat(wax.style.left) + (Math.random() * 10 - 5)}px`;
+                        createBurst(waxX, waxY, 10); // 10個の粒子を発生
+                        
+                        // 連続ヒットを防ぎ、削れた手応えを出すために位置をわずかにずらす
+                        wax.style.left = `${parseFloat(wax.style.left) + (Math.random() * 14 - 7)}px`;
+                        wax.style.top = `${parseFloat(wax.style.top) + (Math.random() * 14 - 7)}px`;
                     } else {
-                        // 耳くそ消滅
-                        createSparkle(waxX, waxY, "🎧");
+                        // 耳くそが完全に消滅するとき（大爆発エフェクト）
+                        createBurst(waxX, waxY, 35); // 35個の粒子を発生
                         wax.remove();
                         updateCount();
                     }
@@ -274,39 +349,26 @@
             });
         }
 
-        // スッキリ演出（文字が飛び出すエフェクト）
-        function createSparkle(x, y, text) {
-            const sparkle = document.createElement('div');
-            sparkle.classList.add('sparkle');
-            sparkle.innerText = text;
-            sparkle.style.left = `${x - 10}px`;
-            sparkle.style.top = `${y - 10}px`;
-            container.appendChild(sparkle);
-
-            setTimeout(() => {
-                sparkle.remove();
-            }, 500);
-        }
-
-        // 残り数の更新とクリア判定
+        // 残り耳くそ数の更新とクリア判定
         function updateCount() {
             const currentWaxes = document.querySelectorAll('.earwax').length;
             waxCountEl.innerText = currentWaxes;
 
+            // 全て消えたらクリア画面を表示
             if (currentWaxes === 0) {
                 resultScreen.style.display = 'flex';
             }
         }
 
-        // ゲームのリセット・初期化
+        // ゲームのリセット・初期化処理
         function resetGame() {
             resultScreen.style.display = 'none';
-            activeWaxCount = TOTAL_WAX;
+            particles = []; // 残っているエフェクトをクリア
             waxCountEl.innerText = TOTAL_WAX;
-            createEarwax();
+            createEarwax(); // 新しく耳くそを配置
         }
 
-        // 初回スタート
+        // ゲームの初回自動スタート
         resetGame();
     </script>
 </body>
