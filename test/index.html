@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Template</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007bff;
+            margin-top: 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Test Page Loaded Successfully</h1>
+        <p>This page is an index.html template file. It is currently rendering correctly.</p>
+        <p>You can use this to test JavaScript, CSS loading, or connection with various template engines such as Flask/Jinja2, Django, Go, and more.</p>
+        
+        <button id="testBtn">Click Test</button>
+    </div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', () => {
+            alert('JavaScript execution test successful!');
+        });
+    </script>
+</body>
+</html>
