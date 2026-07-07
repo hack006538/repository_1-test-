@@ -1,58 +1,313 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Template</title>
+    <title>ごっそり耳くそ掃除ゲーム(ai生成)</title>
     <style>
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: green;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 0;
+            background-color: #f7f3e9;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
         }
         h1 {
-            color: #007bff;
-            margin-top: 0;
+            color: #5d534a;
+            margin: 10px 0 5px 0;
+            font-size: 24px;
+        }
+        #score-board {
+            font-size: 18px;
+            color: #7d6e61;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            background-color: #ffd6b3; /* 耳の内部の肌色 */
+            border: 8px solid #d9a073;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            cursor: none; /* デフォルトのカーソルを隠す */
+        }
+        /* 耳の穴のグラデーション表現 */
+        #ear-hole {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 80%, #663311 0%, #cc8855 70%, #ffd6b3 100%);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        /* 綿棒の見た目 */
+        #swab {
+            position: absolute;
+            width: 24px;
+            height: 250px;
+            pointer-events: none;
+            z-index: 10;
+            transform: translate(-50%, -20px); /* 軸調整 */
+        }
+        /* 綿棒の綿の部分 */
+        .swab-tip {
+            width: 24px;
+            height: 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        /* 綿棒の持ち手（棒）の部分 */
+        .swab-stick {
+            width: 6px;
+            height: 210px;
+            background-color: #add8e6;
+            margin: 0 auto;
+        }
+        /* 耳くそ */
+        .earwax {
+            position: absolute;
+            background-color: #8b5a2b;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s linear;
+        }
+        /* カサブタのような大きめの耳くそ */
+        .big-earwax {
+            background-color: #5c3a21;
+            border-radius: 40% 60% 50% 55%;
+        }
+        /* スッキリ演出のエフェクト */
+        .sparkle {
+            position: absolute;
+            color: #fff;
+            font-size: 20px;
+            pointer-events: none;
+            animation: fadeUp 0.5s ease-out forwards;
+            font-weight: bold;
+        }
+        @keyframes fadeUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-30px) scale(1.2); opacity: 0; }
+        }
+        /* ゲームオーバー／クリア画面 */
+        #result-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(93, 83, 74, 0.95);
+            color: white;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            border-radius: 12px;
+        }
+        #result-screen h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #ffd6b3;
         }
         button {
-            background-color: #007bff;
+            padding: 12px 30px;
+            font-size: 18px;
+            background-color: #ff9933;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            border-radius: 25px;
             cursor: pointer;
-            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: bold;
+            transition: 0.2s;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #ffaa55;
+            transform: scale(1.05);
+        }
+        .message {
+            font-size: 14px;
+            color: #a69382;
+            margin-top: 10px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</h1>
-        <p>aaaaaaaaaaaaaaaaaaaaaaaaaaaa</p>
-        <p>aaaaaaaaaaaaaaaaaaa</p>
-        
-        <button id="testBtn">Click buttoooooooooooooooooooooooooooooooooon</button>
+    <h1>✨ごっそり綿棒耳そうじ✨</h1>
+    <div id="score-board">残り耳くそ: <span id="wax-count">0</span> 個</div>
+
+    <div id="game-container">
+        <div id="ear-hole"></div>
+        <div id="swab">
+            <div class="swab-tip"></div>
+            <div class="swab-stick"></div>
+        </div>
+        <div id="result-screen">
+            <h2>お耳スッキリ！</h2>
+            <p style="font-size: 18px; margin-bottom: 30px;">すべての耳くそを掃除しました！</p>
+            <button onclick="resetGame()">もう一度遊ぶ</button>
+        </div>
     </div>
 
+    <p class="message">【操作方法】マウスやタッチ操作で綿棒を動かして、耳くそに当てよう！</p>
+
     <script>
-        document.getElementById('testBtn').addEventListener('click', () => {
-            alert('pixiv loveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee... etc.');
-        });
+        const container = document.getElementById('game-container');
+        const swab = document.getElementById('swab');
+        const waxCountEl = document.getElementById('wax-count');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const TOTAL_WAX = 20; // 耳くその総数
+        let activeWaxCount = TOTAL_WAX;
+
+        // マウス・タッチ移動に合わせて綿棒を動かす
+        function moveSwab(e) {
+            const rect = container.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches && e.touches[0]) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            // コンテナ内に制限
+            if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                swab.style.left = `${x}px`;
+                swab.style.top = `${y}px`;
+                checkCollision(x, y);
+            }
+        }
+
+        container.addEventListener('mousemove', moveSwab);
+        container.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // スクロール防止
+            moveSwab(e);
+        }, { passive: false });
+
+        // 耳くそをランダムに生成する関数
+        function createEarwax() {
+            // 既存の耳くそを削除
+            const existingWax = document.querySelectorAll('.earwax');
+            existingWax.forEach(w => w.remove());
+
+            for (let i = 0; i < TOTAL_WAX; i++) {
+                const wax = document.createElement('div');
+                wax.classList.add('earwax');
+
+                // 20%の確率で大きい耳くそにする
+                const isBig = Math.random() < 0.2;
+                let size = Math.floor(Math.random() * 15) + 15; // 15px ~ 30px
+                
+                if (isBig) {
+                    wax.classList.add('big-earwax');
+                    size = Math.floor(Math.random() * 15) + 35; // 35px ~ 50px
+                    wax.dataset.hp = 3; // 大きいのは3回こする
+                } else {
+                    wax.dataset.hp = 1;
+                }
+
+                wax.style.width = `${size}px`;
+                wax.style.height = `${size}px`;
+
+                // 耳の穴（中央〜下部）に集まりやすいようにランダム配置
+                const left = Math.random() * 320 + 40;
+                const top = Math.random() * 350 + 80;
+
+                wax.style.left = `${left}px`;
+                wax.style.top = `${top}px`;
+
+                container.appendChild(wax);
+            }
+        }
+
+        // 綿棒の先端と耳くその当たり判定
+        function checkCollision(swabX, swabY) {
+            const waxes = document.querySelectorAll('.earwax');
+            // 綿棒の先端（tip）のおおよその判定範囲
+            const tipRadius = 12;
+
+            waxes.forEach(wax => {
+                const waxX = parseFloat(wax.style.left) + parseFloat(wax.style.width) / 2;
+                const waxY = parseFloat(wax.style.top) + parseFloat(wax.style.height) / 2;
+                const waxRadius = parseFloat(wax.style.width) / 2;
+
+                // 中心間の距離を計算
+                const dist = Math.hypot(swabX - waxX, swabY - waxY);
+
+                // 接触している場合
+                if (dist < tipRadius + waxRadius) {
+                    let hp = parseInt(wax.dataset.hp);
+                    
+                    if (hp > 1) {
+                        // 大きい耳くそは削れる演出
+                        wax.dataset.hp = hp - 1;
+                        wax.style.transform = `scale(${0.7 * hp})`;
+                        createSparkle(waxX, waxY, "✨");
+                        // 連続ヒットを防ぐために一瞬判定をずらす
+                        wax.style.left = `${parseFloat(wax.style.left) + (Math.random() * 10 - 5)}px`;
+                    } else {
+                        // 耳くそ消滅
+                        createSparkle(waxX, waxY, "🎧");
+                        wax.remove();
+                        updateCount();
+                    }
+                }
+            });
+        }
+
+        // スッキリ演出（文字が飛び出すエフェクト）
+        function createSparkle(x, y, text) {
+            const sparkle = document.createElement('div');
+            sparkle.classList.add('sparkle');
+            sparkle.innerText = text;
+            sparkle.style.left = `${x - 10}px`;
+            sparkle.style.top = `${y - 10}px`;
+            container.appendChild(sparkle);
+
+            setTimeout(() => {
+                sparkle.remove();
+            }, 500);
+        }
+
+        // 残り数の更新とクリア判定
+        function updateCount() {
+            const currentWaxes = document.querySelectorAll('.earwax').length;
+            waxCountEl.innerText = currentWaxes;
+
+            if (currentWaxes === 0) {
+                resultScreen.style.display = 'flex';
+            }
+        }
+
+        // ゲームのリセット・初期化
+        function resetGame() {
+            resultScreen.style.display = 'none';
+            activeWaxCount = TOTAL_WAX;
+            waxCountEl.innerText = TOTAL_WAX;
+            createEarwax();
+        }
+
+        // 初回スタート
+        resetGame();
     </script>
 </body>
 </html>
